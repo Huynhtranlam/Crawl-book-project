@@ -2,53 +2,80 @@ from __future__ import annotations
 
 import unittest
 
-from apps.crawler.config import CrawlerConfig
-from apps.crawler.models import normalize_product
-from apps.crawler.source import _extract_items
+from apps.crawler.config import MarketDataConfig
+from apps.crawler.models import normalize_klines, normalize_ticker
 
 
-class ExtractItemsTests(unittest.TestCase):
+class NormalizeMarketDataTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = CrawlerConfig(
-            source_url="https://example.com/products",
-            source_items_key="products",
-            source_name="example-source",
-            batch_limit=10,
+        self.config = MarketDataConfig(
+            api_base_url="https://api.binance.com/api/v3",
+            source_name="binance",
+            symbol="BTCUSDT",
+            event_type="ticker",
+            kline_interval="5m",
+            kline_limit=500,
             http_timeout_seconds=30,
-            default_currency="USD",
+            http_max_retries=3,
+            http_backoff_seconds=2,
         )
 
-    def test_extract_items_from_list_payload(self) -> None:
-        payload = [{"id": "p-1"}]
+    def test_normalize_ticker_builds_market_event(self) -> None:
+        payload = {
+            "symbol": "BTCUSDT",
+            "closeTime": 1773820500000,
+            "lastPrice": "73912.40",
+            "priceChange": "120.50",
+            "priceChangePercent": "0.16",
+            "volume": "100.00",
+            "quoteVolume": "7391240.00",
+            "openPrice": "73791.90",
+            "highPrice": "74000.00",
+            "lowPrice": "73000.00",
+            "count": 12345,
+        }
 
-        items = _extract_items(payload, self.config)
+        record = normalize_ticker(payload, self.config)
 
-        self.assertEqual(payload, items)
+        self.assertEqual("ticker", record.event_type)
+        self.assertEqual("BTCUSDT", record.symbol)
+        self.assertEqual("73912.40", record.payload["last_price"])
 
-    def test_extract_items_from_configured_dict_key(self) -> None:
-        payload = {"products": [{"id": "p-1"}, {"id": "p-2"}]}
-
-        items = _extract_items(payload, self.config)
-
-        self.assertEqual(payload["products"], items)
-
-    def test_raise_when_configured_items_key_is_not_a_list(self) -> None:
-        payload = {"products": {"id": "p-1"}}
-
-        with self.assertRaises(ValueError):
-            _extract_items(payload, self.config)
-
-    def test_normalize_product_rejects_blank_identifier_after_trim(self) -> None:
-        payload = {"id": "   ", "title": "Valid Title", "price": "10.00"}
-
-        with self.assertRaises(ValueError):
-            normalize_product(payload, self.config)
-
-    def test_normalize_product_rejects_blank_title_after_trim(self) -> None:
-        payload = {"id": "sku-1", "title": "   ", "price": "10.00"}
+    def test_normalize_ticker_rejects_missing_symbol(self) -> None:
+        payload = {"closeTime": 1773820500000, "lastPrice": "73912.40"}
 
         with self.assertRaises(ValueError):
-            normalize_product(payload, self.config)
+            normalize_ticker(payload, self.config)
+
+    def test_normalize_klines_builds_market_events(self) -> None:
+        payload = [
+            [
+                1773819900000,
+                "73710.01",
+                "73837.88",
+                "73700.01",
+                "73833.51",
+                "25.78407000",
+                1773820199999,
+                "1901727.49515800",
+                9529,
+                "17.29198000",
+                "1275421.23152540",
+                "0",
+            ]
+        ]
+
+        records = normalize_klines(payload, self.config)
+
+        self.assertEqual(1, len(records))
+        self.assertEqual("kline", records[0].event_type)
+        self.assertEqual("5m", records[0].payload["interval"])
+
+    def test_normalize_klines_rejects_invalid_shape(self) -> None:
+        payload = [["not-enough-fields"]]
+
+        with self.assertRaises(ValueError):
+            normalize_klines(payload, self.config)
 
 
 if __name__ == "__main__":

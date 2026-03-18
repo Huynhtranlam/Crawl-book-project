@@ -5,11 +5,11 @@ from typing import Iterable
 
 from kafka import KafkaProducer
 
-from apps.crawler.models import ProductRecord
+from apps.crawler.models import MarketEvent
 from apps.producer.config import ProducerConfig
 
 
-class ProductKafkaProducer:
+class MarketDataKafkaProducer:
     def __init__(self, config: ProducerConfig) -> None:
         self._config = config
         self._producer = KafkaProducer(
@@ -20,13 +20,13 @@ class ProductKafkaProducer:
             key_serializer=lambda value: value.encode("utf-8"),
         )
 
-    def publish_batch(self, records: Iterable[ProductRecord]) -> int:
+    def publish_batch(self, records: Iterable[MarketEvent]) -> int:
         published = 0
         for record in records:
             future = self._producer.send(
                 self._config.topic,
-                key=record.product_id,
-                value=record.to_dict(),
+                key=record.event_id,
+                value=record.payload,
             )
             future.get(timeout=self._config.request_timeout_ms / 1000)
             published += 1

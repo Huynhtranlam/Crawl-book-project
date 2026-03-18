@@ -18,7 +18,7 @@ def main() -> int:
         invalid_records: list[InvalidRecord] = []
 
         for payload in raw_batch:
-            result = validate_and_clean(payload)
+            result = validate_and_clean(payload, config.market_event_type)
             if isinstance(result, InvalidRecord):
                 invalid_records.append(result)
             else:
@@ -34,7 +34,8 @@ def main() -> int:
 
     print(
         "Processed "
-        f"{len(raw_batch)} records: {written_count} written, {len(invalid_records)} invalid."
+        f"{len(raw_batch)} {config.market_event_type} records: "
+        f"{written_count} written, {len(invalid_records)} invalid."
     )
     if error_output is not None:
         print(f"Invalid records saved to {error_output}.")

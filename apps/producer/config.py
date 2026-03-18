@@ -24,6 +24,7 @@ class ProducerConfig:
         return cls(
             bootstrap_servers=bootstrap_servers,
             topic=topic,
-            client_id=os.getenv("KAFKA_CLIENT_ID", "crawler-producer").strip() or "crawler-producer",
+            client_id=os.getenv("KAFKA_CLIENT_ID", "market-data-producer").strip()
+            or "market-data-producer",
             request_timeout_ms=int(os.getenv("KAFKA_REQUEST_TIMEOUT_MS", "10000")),
         )

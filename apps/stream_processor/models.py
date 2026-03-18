@@ -6,29 +6,42 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class CleanProductRecord:
-    product_id: str
-    title: str
-    price: Decimal | None
-    currency: str
-    product_url: str | None
-    image_url: str | None
+class CleanTickerRecord:
+    event_id: str
     source: str
-    crawled_at: str
+    symbol: str
+    event_time: str
+    ingest_time: str
+    last_price: Decimal
+    price_change_24h: Decimal
+    price_change_pct_24h: Decimal
+    volume_24h: Decimal
+    quote_volume_24h: Decimal
+    open_price_24h: Decimal
+    high_price_24h: Decimal
+    low_price_24h: Decimal
+    trade_count_24h: int
     raw_payload: dict[str, Any]
 
-    def to_insert_tuple(self) -> tuple[Any, ...]:
-        return (
-            self.product_id,
-            self.title,
-            str(self.price) if self.price is not None else None,
-            self.currency,
-            self.product_url,
-            self.image_url,
-            self.source,
-            self.crawled_at,
-            self.raw_payload,
-        )
+
+@dataclass(frozen=True)
+class CleanKlineRecord:
+    event_id: str
+    source: str
+    symbol: str
+    interval: str
+    open_time: str
+    close_time: str
+    open_price: Decimal
+    high_price: Decimal
+    low_price: Decimal
+    close_price: Decimal
+    volume: Decimal
+    quote_asset_volume: Decimal
+    trade_count: int
+    is_closed: bool
+    ingest_time: str
+    raw_payload: dict[str, Any]
 
 
 @dataclass(frozen=True)

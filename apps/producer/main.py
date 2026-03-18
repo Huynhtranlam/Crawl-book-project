@@ -1,23 +1,26 @@
 from __future__ import annotations
 
-from apps.crawler.config import CrawlerConfig
+from apps.crawler.config import MarketDataConfig
 from apps.crawler.source import fetch_normalized_batch
 from apps.producer.config import ProducerConfig
-from apps.producer.kafka_producer import ProductKafkaProducer
+from apps.producer.kafka_producer import MarketDataKafkaProducer
 
 
 def main() -> int:
-    crawler_config = CrawlerConfig.from_env()
+    market_config = MarketDataConfig.from_env()
     producer_config = ProducerConfig.from_env()
-    records = fetch_normalized_batch(crawler_config)
+    records = fetch_normalized_batch(market_config)
 
-    producer = ProductKafkaProducer(producer_config)
+    producer = MarketDataKafkaProducer(producer_config)
     try:
         published = producer.publish_batch(records)
     finally:
         producer.close()
 
-    print(f"Published {published} records to topic '{producer_config.topic}'.")
+    print(
+        f"Published {published} {market_config.event_type} records "
+        f"for {market_config.symbol} to topic '{producer_config.topic}'."
+    )
     return 0
 
 

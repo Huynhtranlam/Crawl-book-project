@@ -5,30 +5,40 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class CrawlerConfig:
-    source_url: str
-    source_items_key: str | None
+class MarketDataConfig:
+    api_base_url: str
     source_name: str
-    batch_limit: int
+    symbol: str
+    event_type: str
+    kline_interval: str
+    kline_limit: int
     http_timeout_seconds: int
-    default_currency: str
+    http_max_retries: int
+    http_backoff_seconds: int
 
     @classmethod
-    def from_env(cls) -> "CrawlerConfig":
-        source_url = os.getenv("CRAWLER_SOURCE_URL", "").strip()
-        if not source_url:
-            raise ValueError(
-                "CRAWLER_SOURCE_URL is required. "
-                "TODO: set the real target source URL once it is specified."
-            )
+    def from_env(cls) -> "MarketDataConfig":
+        api_base_url = os.getenv(
+            "MARKET_DATA_API_BASE_URL", "https://api.binance.com/api/v3"
+        ).strip()
+        symbol = os.getenv("MARKET_SYMBOL", "BTCUSDT").strip().upper()
+        event_type = os.getenv("MARKET_DATA_EVENT_TYPE", "ticker").strip().lower()
 
-        source_items_key = os.getenv("CRAWLER_SOURCE_ITEMS_KEY", "").strip() or None
+        if not api_base_url:
+            raise ValueError("MARKET_DATA_API_BASE_URL is required.")
+        if not symbol:
+            raise ValueError("MARKET_SYMBOL is required.")
+        if event_type not in {"ticker", "kline"}:
+            raise ValueError("MARKET_DATA_EVENT_TYPE must be either 'ticker' or 'kline'.")
 
         return cls(
-            source_url=source_url,
-            source_items_key=source_items_key,
-            source_name=os.getenv("CRAWLER_SOURCE_NAME", "unspecified-source").strip(),
-            batch_limit=int(os.getenv("CRAWLER_BATCH_LIMIT", "10")),
-            http_timeout_seconds=int(os.getenv("CRAWLER_HTTP_TIMEOUT_SECONDS", "30")),
-            default_currency=os.getenv("CRAWLER_DEFAULT_CURRENCY", "USD").strip() or "USD",
+            api_base_url=api_base_url.rstrip("/"),
+            source_name=os.getenv("MARKET_SOURCE_NAME", "binance").strip() or "binance",
+            symbol=symbol,
+            event_type=event_type,
+            kline_interval=os.getenv("MARKET_KLINE_INTERVAL", "5m").strip() or "5m",
+            kline_limit=int(os.getenv("MARKET_KLINE_LIMIT", "500")),
+            http_timeout_seconds=int(os.getenv("MARKET_HTTP_TIMEOUT_SECONDS", "30")),
+            http_max_retries=int(os.getenv("MARKET_HTTP_MAX_RETRIES", "3")),
+            http_backoff_seconds=int(os.getenv("MARKET_HTTP_BACKOFF_SECONDS", "2")),
         )
