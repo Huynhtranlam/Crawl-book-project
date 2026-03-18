@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: dim_products
+    description: "Analytics-ready product dimension for downstream consumers."
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+      - name: product_title
+        tests:
+          - not_null
+      - name: price_band
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["low", "mid", "high"]

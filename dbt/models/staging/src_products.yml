@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: stream_processor
+    schema: public
+    tables:
+      - name: products_clean
+        description: "Validated product records written by the stream processor."
+        columns:
+          - name: product_id
+            tests:
+              - not_null
+              - unique
+          - name: title
+            tests:
+              - not_null
+          - name: currency
+            tests:
+              - not_null
+
+models:
+  - name: stg_products
+    description: "Staging layer that standardizes processed products for analytics use."
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+          - unique
+      - name: product_title
+        tests:
+          - not_null
+      - name: product_price
+        tests:
+          - not_null
+      - name: currency_code
+        tests:
+          - not_null

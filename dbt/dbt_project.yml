@@ -1,0 +1,20 @@
+name: "crawl_book"
+version: "1.0.0"
+config-version: 2
+
+profile: "crawl_book"
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  crawl_book:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts
