@@ -51,5 +51,14 @@ class EnsureDatabaseTests(unittest.TestCase):
         self.assertEqual("/api/database", request_json_mock.call_args_list[1].args[1])
 
 
+class DashboardChartTests(unittest.TestCase):
+    def test_dashboard_has_at_least_three_charts(self) -> None:
+        self.assertGreaterEqual(len(setup_metabase.CHARTS), 3)
+
+    def test_dashboard_queries_target_btc_marts(self) -> None:
+        for chart in setup_metabase.CHARTS:
+            self.assertIn("mart_btc_", chart["query"])
+
+
 if __name__ == "__main__":
     unittest.main()

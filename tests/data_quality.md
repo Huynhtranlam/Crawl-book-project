@@ -4,9 +4,9 @@
 
 This project validates data quality in three layers:
 
-- Ingestion: crawler normalization rejects blank identifiers, blank titles, blank currencies, and blank source names.
-- Processing: stream processor rejects missing required fields, invalid prices, negative prices, and invalid `crawled_at` timestamps.
-- Modeling: dbt enforces null, unique, accepted-value, freshness, and singular SQL checks on core source and mart tables.
+- Ingestion: market data normalization rejects malformed Binance ticker and kline payloads before publishing.
+- Processing: stream processor rejects missing fields, negative values where impossible, invalid timestamps, and inconsistent OHLC candle values.
+- Modeling: dbt enforces null, unique, accepted-value, freshness, and singular SQL checks on BTC ticker/kline source and mart tables.
 
 ## Local Commands
 

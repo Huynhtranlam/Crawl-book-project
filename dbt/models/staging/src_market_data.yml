@@ -1,0 +1,94 @@
+version: 2
+
+sources:
+  - name: market_data
+    schema: public
+    tables:
+      - name: raw_btc_ticker_events
+        description: "Validated BTC ticker events sourced from Binance."
+        loaded_at_field: ingest_time
+        freshness:
+          warn_after:
+            count: 30
+            period: minute
+          error_after:
+            count: 1
+            period: day
+        columns:
+          - name: event_id
+            tests:
+              - not_null
+              - unique
+          - name: symbol
+            tests:
+              - not_null
+          - name: event_time
+            tests:
+              - not_null
+          - name: last_price
+            tests:
+              - not_null
+      - name: raw_btc_kline_events
+        description: "Validated BTC kline events sourced from Binance."
+        loaded_at_field: ingest_time
+        freshness:
+          warn_after:
+            count: 30
+            period: minute
+          error_after:
+            count: 1
+            period: day
+        columns:
+          - name: event_id
+            tests:
+              - not_null
+              - unique
+          - name: symbol
+            tests:
+              - not_null
+          - name: interval
+            tests:
+              - not_null
+          - name: open_time
+            tests:
+              - not_null
+          - name: close_price
+            tests:
+              - not_null
+
+models:
+  - name: stg_btc_ticker
+    description: "Cleaned BTC 24h ticker data."
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: symbol
+        tests:
+          - not_null
+      - name: last_price
+        tests:
+          - not_null
+      - name: ingest_time
+        tests:
+          - not_null
+  - name: stg_btc_klines
+    description: "Cleaned BTC OHLCV candles."
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: symbol
+        tests:
+          - not_null
+      - name: interval
+        tests:
+          - not_null
+      - name: open_time
+        tests:
+          - not_null
+      - name: close_price
+        tests:
+          - not_null

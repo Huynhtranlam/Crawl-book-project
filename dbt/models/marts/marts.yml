@@ -1,31 +1,62 @@
 version: 2
 
 models:
-  - name: dim_products
-    description: "Analytics-ready product dimension for downstream consumers."
+  - name: mart_btc_ohlcv
+    description: "Analytics-ready BTC OHLCV candles with indicators."
     columns:
-      - name: product_id
+      - name: event_id
         tests:
           - not_null
           - unique
-      - name: product_title
+      - name: symbol
         tests:
           - not_null
-      - name: price_band
+      - name: interval
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ["low", "mid", "high"]
-      - name: currency_code
+                values: ["5m"]
+      - name: candle_time
         tests:
           - not_null
-      - name: source_name
+      - name: close
         tests:
           - not_null
-      - name: crawled_at
+      - name: trend_regime
         tests:
           - not_null
-      - name: is_in_stock
+          - accepted_values:
+              arguments:
+                values: ["bullish", "bearish", "ranging"]
+  - name: mart_btc_price_latest
+    description: "Latest BTC market snapshot with decision-support metrics."
+    columns:
+      - name: symbol
         tests:
           - not_null
+          - unique
+      - name: as_of_time
+        tests:
+          - not_null
+      - name: last_price
+        tests:
+          - not_null
+      - name: trend_regime
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["bullish", "bearish", "ranging"]
+      - name: momentum_regime
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["strengthening", "weakening", "neutral"]
+      - name: volatility_regime
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["normal", "elevated", "extreme"]

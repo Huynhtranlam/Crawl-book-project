@@ -6,12 +6,12 @@ import urllib.request
 
 
 METABASE_URL = os.getenv("METABASE_URL", "http://localhost:3000").rstrip("/")
-SITE_NAME = os.getenv("METABASE_SITE_NAME", "Realtime Product Analytics")
+SITE_NAME = os.getenv("METABASE_SITE_NAME", "BTC Market Monitoring Dashboard")
 ADMIN_FIRST_NAME = os.getenv("METABASE_ADMIN_FIRST_NAME", "Dashboard")
 ADMIN_LAST_NAME = os.getenv("METABASE_ADMIN_LAST_NAME", "Admin")
 ADMIN_EMAIL = os.getenv("METABASE_ADMIN_EMAIL", "admin@example.com")
 ADMIN_PASSWORD = os.getenv("METABASE_ADMIN_PASSWORD", "metabase123")
-DATABASE_NAME = os.getenv("METABASE_DATABASE_NAME", "Analytics Warehouse")
+DATABASE_NAME = os.getenv("METABASE_DATABASE_NAME", "BTC Market Warehouse")
 DATABASE_HOST = os.getenv("METABASE_DATABASE_HOST", "postgres")
 DATABASE_PORT = int(os.getenv("METABASE_DATABASE_PORT", "5432"))
 DATABASE_DBNAME = os.getenv("METABASE_DATABASE_DBNAME", "analytics")
@@ -20,54 +20,101 @@ DATABASE_PASSWORD = os.getenv("METABASE_DATABASE_PASSWORD", "analytics123")
 DATABASE_SCHEMA = os.getenv("METABASE_DATABASE_SCHEMA", "public_marts")
 SETUP_TIMEOUT_SECONDS = int(os.getenv("METABASE_SETUP_TIMEOUT_SECONDS", "300"))
 
-DASHBOARD_NAME = "Realtime Product Analytics"
-DASHBOARD_DESCRIPTION = "Phase 6 dashboard for analytics-ready product mart data."
+DASHBOARD_NAME = "BTC Market Monitoring"
+DASHBOARD_DESCRIPTION = "BTCUSDT market monitoring dashboard with trend, volatility, and signal context."
 
 CHARTS = [
     {
-        "name": "Products by Category",
-        "display": "bar",
-        "query": (
-            "select category_name, count(*) as product_count "
-            f"from {DATABASE_SCHEMA}.dim_products "
-            "group by category_name "
-            "order by product_count desc"
-        ),
-        "layout": {"row": 0, "col": 0, "size_x": 12, "size_y": 8},
+        "name": "BTC Latest Market Snapshot",
+        "display": "table",
+        "query": f"""
+            select
+                symbol,
+                as_of_time,
+                last_price,
+                price_change_pct_5m,
+                price_change_pct_15m,
+                price_change_pct_1h,
+                price_change_pct_4h,
+                price_change_pct_24h,
+                volume_24h,
+                intraday_volatility,
+                trend_regime,
+                momentum_regime,
+                volatility_regime
+            from {DATABASE_SCHEMA}.mart_btc_price_latest
+        """,
+        "layout": {"row": 0, "col": 0, "size_x": 24, "size_y": 6},
     },
     {
-        "name": "Products by Price Band",
-        "display": "pie",
-        "query": (
-            "select price_band, count(*) as product_count "
-            f"from {DATABASE_SCHEMA}.dim_products "
-            "group by price_band "
-            "order by product_count desc"
-        ),
-        "layout": {"row": 0, "col": 12, "size_x": 12, "size_y": 8},
+        "name": "BTC Close Price and Moving Averages",
+        "display": "line",
+        "query": f"""
+            select *
+            from (
+                select
+                    candle_time,
+                    close,
+                    sma_20,
+                    ema_20
+                from {DATABASE_SCHEMA}.mart_btc_ohlcv
+                order by candle_time desc
+                limit 120
+            ) recent_candles
+            order by candle_time
+        """,
+        "layout": {"row": 6, "col": 0, "size_x": 24, "size_y": 8},
     },
     {
-        "name": "Average Price by Brand",
-        "display": "bar",
-        "query": (
-            "select brand_name, avg(product_price) as average_price "
-            f"from {DATABASE_SCHEMA}.dim_products "
-            "group by brand_name "
-            "order by average_price desc "
-            "limit 10"
-        ),
-        "layout": {"row": 8, "col": 0, "size_x": 12, "size_y": 8},
+        "name": "BTC RSI 14 Trend",
+        "display": "line",
+        "query": f"""
+            select *
+            from (
+                select
+                    candle_time,
+                    rsi_14
+                from {DATABASE_SCHEMA}.mart_btc_ohlcv
+                order by candle_time desc
+                limit 120
+            ) recent_rsi
+            order by candle_time
+        """,
+        "layout": {"row": 14, "col": 0, "size_x": 12, "size_y": 8},
     },
     {
-        "name": "Average Rating by Category",
+        "name": "BTC Volume vs Rolling Average",
         "display": "bar",
-        "query": (
-            "select category_name, avg(product_rating) as average_rating "
-            f"from {DATABASE_SCHEMA}.dim_products "
-            "group by category_name "
-            "order by average_rating desc"
-        ),
-        "layout": {"row": 8, "col": 12, "size_x": 12, "size_y": 8},
+        "query": f"""
+            select *
+            from (
+                select
+                    candle_time,
+                    volume,
+                    volume_ma_20
+                from {DATABASE_SCHEMA}.mart_btc_ohlcv
+                order by candle_time desc
+                limit 120
+            ) recent_volume
+            order by candle_time
+        """,
+        "layout": {"row": 14, "col": 12, "size_x": 12, "size_y": 8},
+    },
+    {
+        "name": "BTC Multi-timeframe Returns",
+        "display": "bar",
+        "query": f"""
+            select '5m' as timeframe, price_change_pct_5m as return_pct from {DATABASE_SCHEMA}.mart_btc_price_latest
+            union all
+            select '15m' as timeframe, price_change_pct_15m as return_pct from {DATABASE_SCHEMA}.mart_btc_price_latest
+            union all
+            select '1h' as timeframe, price_change_pct_1h as return_pct from {DATABASE_SCHEMA}.mart_btc_price_latest
+            union all
+            select '4h' as timeframe, price_change_pct_4h as return_pct from {DATABASE_SCHEMA}.mart_btc_price_latest
+            union all
+            select '24h' as timeframe, price_change_pct_24h as return_pct from {DATABASE_SCHEMA}.mart_btc_price_latest
+        """,
+        "layout": {"row": 22, "col": 0, "size_x": 24, "size_y": 8},
     },
 ]
 
