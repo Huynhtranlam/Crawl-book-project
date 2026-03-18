@@ -59,6 +59,53 @@ class DashboardChartTests(unittest.TestCase):
         for chart in setup_metabase.CHARTS:
             self.assertIn("mart_btc_", chart["query"])
 
+    def test_dashboard_charts_define_interval_table(self) -> None:
+        for chart in setup_metabase.CHARTS:
+            self.assertIn(chart["interval_table"], {"mart_btc_ohlcv", "mart_btc_price_latest"})
+
+    def test_dashboard_interval_parameter_uses_static_dropdown_values(self) -> None:
+        parameters = setup_metabase._dashboard_parameters()
+
+        self.assertEqual(1, len(parameters))
+        parameter = parameters[0]
+        self.assertEqual("dashboard-candle-interval", parameter["id"])
+        self.assertEqual("string", parameter["sectionId"])
+        self.assertEqual(["5m"], parameter["default"])
+        self.assertEqual("static-list", parameter["values_source_type"])
+        self.assertEqual(
+            ["1m", "5m", "15m", "1h", "4h", "1d", "1w"],
+            parameter["values_source_config"]["values"],
+        )
+
+    def test_card_payload_includes_interval_parameter_definition(self) -> None:
+        payload = setup_metabase._card_payload(
+            3,
+            setup_metabase.CHARTS[0],
+            {"mart_btc_price_latest": 124, "mart_btc_ohlcv": 101},
+        )
+
+        self.assertEqual("BTC Market Snapshot", payload["name"])
+        self.assertEqual(1, len(payload["parameters"]))
+        self.assertEqual("interval_value", payload["parameters"][0]["id"])
+        self.assertEqual(
+            ["dimension", ["template-tag", "interval_value"]],
+            payload["parameters"][0]["target"],
+        )
+        self.assertEqual(
+            ["field", 124, None],
+            payload["dataset_query"]["native"]["template-tags"]["interval_value"]["dimension"],
+        )
+
+    def test_dashcard_parameter_mapping_includes_card_id(self) -> None:
+        mapping = setup_metabase._dashcard_parameter_mappings(49)[0]
+
+        self.assertEqual("dashboard-candle-interval", mapping["parameter_id"])
+        self.assertEqual(49, mapping["card_id"])
+        self.assertEqual(
+            ["dimension", ["template-tag", "interval_value"]],
+            mapping["target"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

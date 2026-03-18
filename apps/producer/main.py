@@ -19,7 +19,9 @@ def main() -> int:
 
     print(
         f"Published {published} {market_config.event_type} records "
-        f"for {market_config.symbol} to topic '{producer_config.topic}'."
+        f"for {market_config.symbol}"
+        f"{' across ' + ','.join(market_config.kline_intervals) if market_config.event_type == 'kline' else ''} "
+        f"to topic '{producer_config.topic}'."
     )
     return 0
 

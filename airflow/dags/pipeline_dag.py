@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
 
 
 PROJECT_DIR = "/opt/pipeline"
@@ -15,6 +15,7 @@ def _base_env() -> dict[str, str]:
     env = dict(os.environ)
     env.update(
         {
+            "PATH": f"/home/airflow/.local/bin:{env.get('PATH', '')}",
             "PYTHONPATH": PROJECT_DIR,
             "MARKET_DATA_API_BASE_URL": os.getenv(
                 "AIRFLOW_MARKET_DATA_API_BASE_URL", "https://api.binance.com/api/v3"
@@ -22,6 +23,9 @@ def _base_env() -> dict[str, str]:
             "MARKET_SOURCE_NAME": os.getenv("AIRFLOW_MARKET_SOURCE_NAME", "binance"),
             "MARKET_SYMBOL": os.getenv("AIRFLOW_MARKET_SYMBOL", "BTCUSDT"),
             "MARKET_KLINE_INTERVAL": os.getenv("AIRFLOW_MARKET_KLINE_INTERVAL", "5m"),
+            "MARKET_KLINE_INTERVALS": os.getenv(
+                "AIRFLOW_MARKET_KLINE_INTERVALS", "1m,5m,15m,1h,4h,1d,1w"
+            ),
             "MARKET_KLINE_LIMIT": os.getenv("AIRFLOW_MARKET_KLINE_LIMIT", "500"),
             "MARKET_HTTP_TIMEOUT_SECONDS": os.getenv(
                 "AIRFLOW_MARKET_HTTP_TIMEOUT_SECONDS", "30"
@@ -133,5 +137,22 @@ with DAG(
         },
     )
 
-    ingest_btc_ticker >> process_btc_ticker
-    ingest_btc_klines >> process_btc_klines
+    build_btc_marts = BashOperator(
+        task_id="build_btc_marts",
+        bash_command=(
+            f"cd {PROJECT_DIR} && "
+            "dbt run --project-dir dbt --profiles-dir dbt "
+            "--select mart_btc_ohlcv mart_btc_price_latest"
+        ),
+        env={
+            **_base_env(),
+            "POSTGRES_HOST": os.getenv("AIRFLOW_POSTGRES_HOST", "postgres"),
+            "POSTGRES_PORT": os.getenv("AIRFLOW_POSTGRES_PORT", "5432"),
+            "POSTGRES_DB": os.getenv("AIRFLOW_POSTGRES_DB", "analytics"),
+            "POSTGRES_USER": os.getenv("AIRFLOW_POSTGRES_USER", "analytics"),
+            "POSTGRES_PASSWORD": os.getenv("AIRFLOW_POSTGRES_PASSWORD", "analytics123"),
+        },
+    )
+
+    ingest_btc_ticker >> process_btc_ticker >> build_btc_marts
+    ingest_btc_klines >> process_btc_klines >> build_btc_marts

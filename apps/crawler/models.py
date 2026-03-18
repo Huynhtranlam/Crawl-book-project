@@ -64,7 +64,7 @@ def normalize_ticker(raw_item: dict[str, Any], config: MarketDataConfig) -> Mark
 
 
 def normalize_klines(
-    raw_items: list[list[Any]], config: MarketDataConfig
+    raw_items: list[list[Any]], config: MarketDataConfig, interval: str
 ) -> list[MarketEvent]:
     normalized_events: list[MarketEvent] = []
 
@@ -76,11 +76,11 @@ def normalize_klines(
         close_time_ms = raw_item[6]
         ingest_time = datetime.now(timezone.utc).isoformat()
         payload = {
-            "event_id": f"kline-{config.symbol}-{config.kline_interval}-{open_time_ms}",
+            "event_id": f"kline-{config.symbol}-{interval}-{open_time_ms}",
             "event_type": "kline",
             "source": config.source_name,
             "symbol": config.symbol,
-            "interval": config.kline_interval,
+            "interval": interval,
             "event_time": _require_timestamp(close_time_ms, "close_time"),
             "ingest_time": ingest_time,
             "open_time": _require_timestamp(open_time_ms, "open_time"),

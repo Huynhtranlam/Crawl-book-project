@@ -16,7 +16,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ["5m"]
+                values: ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]
       - name: candle_time
         tests:
           - not_null
@@ -35,7 +35,9 @@ models:
       - name: symbol
         tests:
           - not_null
-          - unique
+      - name: interval
+        tests:
+          - not_null
       - name: as_of_time
         tests:
           - not_null

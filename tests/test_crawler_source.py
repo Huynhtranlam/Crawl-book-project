@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from apps.crawler.config import MarketDataConfig
+from apps.crawler.config import MarketDataConfig, _parse_kline_intervals
 from apps.crawler.models import normalize_klines, normalize_ticker
 
 
@@ -14,6 +14,7 @@ class NormalizeMarketDataTests(unittest.TestCase):
             symbol="BTCUSDT",
             event_type="ticker",
             kline_interval="5m",
+            kline_intervals=("5m",),
             kline_limit=500,
             http_timeout_seconds=30,
             http_max_retries=3,
@@ -65,7 +66,7 @@ class NormalizeMarketDataTests(unittest.TestCase):
             ]
         ]
 
-        records = normalize_klines(payload, self.config)
+        records = normalize_klines(payload, self.config, "5m")
 
         self.assertEqual(1, len(records))
         self.assertEqual("kline", records[0].event_type)
@@ -75,7 +76,16 @@ class NormalizeMarketDataTests(unittest.TestCase):
         payload = [["not-enough-fields"]]
 
         with self.assertRaises(ValueError):
-            normalize_klines(payload, self.config)
+            normalize_klines(payload, self.config, "5m")
+
+    def test_parse_kline_intervals_supports_multiple_values(self) -> None:
+        intervals = _parse_kline_intervals("1m,5m,15m,1h,4h,1d,1w")
+
+        self.assertEqual(("1m", "5m", "15m", "1h", "4h", "1d", "1w"), intervals)
+
+    def test_parse_kline_intervals_rejects_unsupported_values(self) -> None:
+        with self.assertRaises(ValueError):
+            _parse_kline_intervals("2m,5m")
 
 
 if __name__ == "__main__":

@@ -14,19 +14,22 @@ def fetch_normalized_batch(config: MarketDataConfig) -> list[MarketEvent]:
         payload = _request_json("/ticker/24hr", {"symbol": config.symbol}, config)
         return [normalize_ticker(payload, config)]
 
-    payload = _request_json(
-        "/klines",
-        {
-            "symbol": config.symbol,
-            "interval": config.kline_interval,
-            "limit": config.kline_limit,
-        },
-        config,
-    )
-    if not isinstance(payload, list):
-        raise ValueError("Binance kline endpoint did not return a list payload.")
+    normalized_events: list[MarketEvent] = []
+    for interval in config.kline_intervals:
+        payload = _request_json(
+            "/klines",
+            {
+                "symbol": config.symbol,
+                "interval": interval,
+                "limit": config.kline_limit,
+            },
+            config,
+        )
+        if not isinstance(payload, list):
+            raise ValueError("Binance kline endpoint did not return a list payload.")
+        normalized_events.extend(normalize_klines(payload, config, interval))
 
-    return normalize_klines(payload, config)
+    return normalized_events
 
 
 def _request_json(

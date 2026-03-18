@@ -1,4 +1,9 @@
-with recursive ordered as (
+with recursive source_klines as (
+    select *
+    from {{ ref('stg_btc_klines') }}
+    where close_time <= ingest_time
+),
+ordered as (
     select
         *,
         row_number() over (
@@ -34,7 +39,7 @@ with recursive ordered as (
             order by close_time
             rows between 19 preceding and current row
         ) as rolling_low_20
-    from {{ ref('stg_btc_klines') }}
+    from source_klines
 ),
 ema as (
     select
@@ -68,7 +73,7 @@ enriched as (
         ordered.source,
         ordered.symbol,
         ordered.interval,
-        ordered.open_time as candle_time,
+        ordered.close_time as candle_time,
         ordered.open_price as open,
         ordered.high_price as high,
         ordered.low_price as low,
