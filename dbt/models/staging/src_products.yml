@@ -3,6 +3,14 @@ version: 2
 sources:
   - name: stream_processor
     schema: public
+    loaded_at_field: crawled_at
+    freshness:
+      warn_after:
+        count: 1
+        period: day
+      error_after:
+        count: 7
+        period: day
     tables:
       - name: products_clean
         description: "Validated product records written by the stream processor."
@@ -15,6 +23,9 @@ sources:
             tests:
               - not_null
           - name: currency
+            tests:
+              - not_null
+          - name: crawled_at
             tests:
               - not_null
 
@@ -33,5 +44,11 @@ models:
         tests:
           - not_null
       - name: currency_code
+        tests:
+          - not_null
+      - name: source_name
+        tests:
+          - not_null
+      - name: crawled_at
         tests:
           - not_null

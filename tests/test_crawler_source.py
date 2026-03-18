@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from apps.crawler.config import CrawlerConfig
+from apps.crawler.models import normalize_product
 from apps.crawler.source import _extract_items
 
 
@@ -36,6 +37,18 @@ class ExtractItemsTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             _extract_items(payload, self.config)
+
+    def test_normalize_product_rejects_blank_identifier_after_trim(self) -> None:
+        payload = {"id": "   ", "title": "Valid Title", "price": "10.00"}
+
+        with self.assertRaises(ValueError):
+            normalize_product(payload, self.config)
+
+    def test_normalize_product_rejects_blank_title_after_trim(self) -> None:
+        payload = {"id": "sku-1", "title": "   ", "price": "10.00"}
+
+        with self.assertRaises(ValueError):
+            normalize_product(payload, self.config)
 
 
 if __name__ == "__main__":

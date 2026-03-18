@@ -17,3 +17,15 @@ models:
           - accepted_values:
               arguments:
                 values: ["low", "mid", "high"]
+      - name: currency_code
+        tests:
+          - not_null
+      - name: source_name
+        tests:
+          - not_null
+      - name: crawled_at
+        tests:
+          - not_null
+      - name: is_in_stock
+        tests:
+          - not_null

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -20,6 +21,10 @@ def validate_and_clean(payload: dict[str, Any]) -> CleanProductRecord | InvalidR
     price = _clean_price(payload.get("price"))
     if payload.get("price") not in (None, "") and price is None:
         return InvalidRecord(reason="Invalid price value.", payload=payload)
+    if price is not None and price < 0:
+        return InvalidRecord(reason="Price must be zero or greater.", payload=payload)
+    if not _is_iso8601_timestamp(payload.get("crawled_at")):
+        return InvalidRecord(reason="Invalid crawled_at value.", payload=payload)
 
     return CleanProductRecord(
         product_id=str(payload["product_id"]).strip(),
@@ -58,3 +63,15 @@ def _clean_price(value: Any) -> Decimal | None:
         return Decimal(str(value))
     except (InvalidOperation, ValueError):
         return None
+
+
+def _is_iso8601_timestamp(value: Any) -> bool:
+    if not _has_value(value):
+        return False
+
+    try:
+        datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+
+    return True

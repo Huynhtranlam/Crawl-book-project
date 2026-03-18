@@ -60,6 +60,38 @@ class ValidateAndCleanTests(unittest.TestCase):
         assert isinstance(record, InvalidRecord)
         self.assertEqual("Invalid price value.", record.reason)
 
+    def test_validate_and_clean_rejects_negative_price(self) -> None:
+        payload = {
+            "product_id": "sku-1",
+            "title": "Sample Product",
+            "price": "-1.00",
+            "currency": "USD",
+            "source": "dummyjson",
+            "crawled_at": "2026-03-18T00:00:00Z",
+        }
+
+        record = validate_and_clean(payload)
+
+        self.assertIsInstance(record, InvalidRecord)
+        assert isinstance(record, InvalidRecord)
+        self.assertEqual("Price must be zero or greater.", record.reason)
+
+    def test_validate_and_clean_rejects_invalid_crawled_at(self) -> None:
+        payload = {
+            "product_id": "sku-1",
+            "title": "Sample Product",
+            "price": "12.50",
+            "currency": "USD",
+            "source": "dummyjson",
+            "crawled_at": "not-a-timestamp",
+        }
+
+        record = validate_and_clean(payload)
+
+        self.assertIsInstance(record, InvalidRecord)
+        assert isinstance(record, InvalidRecord)
+        self.assertEqual("Invalid crawled_at value.", record.reason)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,34 +25,38 @@ class ProductRecord:
 
 
 def normalize_product(raw_item: dict[str, Any], config: CrawlerConfig) -> ProductRecord:
-    product_id = (
+    product_id_value = (
         raw_item.get("id")
         or raw_item.get("product_id")
         or raw_item.get("sku")
         or raw_item.get("asin")
     )
-    title = raw_item.get("title") or raw_item.get("name")
+    title_value = raw_item.get("title") or raw_item.get("name")
 
-    if product_id is None or not title:
+    if product_id_value is None or title_value is None:
         raise ValueError("Record is missing required identifier or title fields.")
 
     price = _normalize_price(raw_item.get("price"))
-    currency = (
+    currency_value = (
         raw_item.get("currency")
         or raw_item.get("currency_code")
         or config.default_currency
     )
     product_url = raw_item.get("url") or raw_item.get("product_url") or raw_item.get("link")
     image_url = _extract_image_url(raw_item)
+    product_id = _require_non_empty_text(product_id_value, "product identifier")
+    title = _require_non_empty_text(title_value, "title")
+    currency = _require_non_empty_text(currency_value, "currency")
+    source_name = _require_non_empty_text(config.source_name, "source name")
 
     return ProductRecord(
-        product_id=str(product_id),
-        title=str(title).strip(),
+        product_id=product_id,
+        title=title,
         price=price,
-        currency=str(currency).strip(),
+        currency=currency,
         product_url=str(product_url).strip() if product_url else None,
         image_url=image_url,
-        source=config.source_name,
+        source=source_name,
         crawled_at=datetime.now(timezone.utc).isoformat(),
         raw=raw_item,
     )
@@ -81,3 +85,10 @@ def _extract_image_url(raw_item: dict[str, Any]) -> str | None:
                 return item.strip()
 
     return None
+
+
+def _require_non_empty_text(value: Any, field_name: str) -> str:
+    cleaned = str(value).strip()
+    if not cleaned:
+        raise ValueError(f"Record is missing a valid {field_name}.")
+    return cleaned
